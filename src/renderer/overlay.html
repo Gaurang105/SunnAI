@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SunnAI Dictation Overlay</title>
+    <link rel="stylesheet" href="overlay.css">
+</head>
+<body>
+    <div id="overlay-container">
+        <!-- Compact state -->
+        <div id="compact-state" class="state active">
+            <div class="microphone-icon">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Expanded state -->
+        <div id="expanded-state" class="state">
+            <div class="content">
+                <div class="microphone-button" id="mic-button">
+                    <div class="mic-icon">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                            <line x1="8" y1="23" x2="16" y2="23"></line>
+                        </svg>
+                    </div>
+                    <div class="pulse-ring"></div>
+                </div>
+                <div class="status-text">
+                    <span id="status-message">Click to start</span>
+                </div>
+                <div class="hotkey-hint">⌘H</div>
+            </div>
+        </div>
+
+        <!-- Recording indicator -->
+        <div id="recording-indicator" class="recording-dots">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+    </div>
+
+    <script src="overlay.js"></script>
+</body>
+</html> 

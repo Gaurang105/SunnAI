@@ -1,0 +1,58 @@
+{
+  "name": "sunn-ai-dictation",
+  "version": "1.0.0",
+  "description": "AI-powered dictation tool with dynamic overlay",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:linux": "electron-builder --linux"
+  },
+  "keywords": [
+    "dictation",
+    "AI",
+    "whisper",
+    "electron",
+    "overlay"
+  ],
+  "author": "SunnAI",
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^9.28.0",
+    "electron": "^27.0.0",
+    "electron-builder": "^24.6.4",
+    "electron-rebuild": "^3.2.9",
+    "eslint": "^9.28.0",
+    "eslint-plugin-unused-imports": "^4.1.4",
+    "globals": "^16.2.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "openai": "^4.20.1",
+    "robotjs": "^0.6.0"
+  },
+  "build": {
+    "appId": "com.sunnai.dictation",
+    "productName": "SunnAI Dictation",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "icon": "assets/icon.ico"
+    },
+    "linux": {
+      "icon": "assets/icon.png"
+    }
+  }
+}
