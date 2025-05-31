@@ -193,7 +193,9 @@ class AudioService {
             }
             throw error;
         } finally {
-            this.recordingProcess.kill('SIGKILL');
+            if (this.recordingProcess) {
+                this.recordingProcess.kill('SIGKILL');
+            }
             this.isRecording = false;
         }
     }
@@ -204,7 +206,7 @@ class AudioService {
             const completion = await this.openai.chat.completions.create({
                 model: this.assistantModel,
                 messages: [
-                    { role: 'system', content: 'You are a helpful AI assistant integrated into a dictation tool. The user activated you with "Hey Sun". Please process the following command.' },
+                    { role: 'system', content: 'You are a helpful AI assistant integrated into a dictation tool. The user activated you with "Hey Sun". Provide only the specific content requested without any introductory text, explanations, or additional suggestions. For example, if asked to write an email, provide only the email content itself.' },
                     { role: 'user', content: command }
                 ],
                 max_tokens: 150, 
