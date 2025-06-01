@@ -15,14 +15,39 @@ let audioService;
 let textInjectionService;
 let settingsService;
 
+function createDockMenu() {
+  if (process.platform === 'darwin') {
+    const dockMenu = Menu.buildFromTemplate([
+      {
+        label: 'Settings',
+        click: () => openSettings()
+      },
+      {
+        type: 'separator'
+      },
+      {
+        label: 'Show Overlay',
+        click: () => {
+          if (overlayWindow) {
+            overlayWindow.show();
+          }
+        }
+      }
+    ]);
+    app.dock.setMenu(dockMenu);
+  }
+}
+
 function createTray() {
   try {
-    // Use different icon paths for different platforms
+    // Use different icon paths for different platforms and environments
     let iconPath;
-    if (process.platform === 'darwin') {
-      // On macOS, use a smaller icon for the menu bar
-      iconPath = path.join(__dirname, '../assets/tray-icon.png');
+    
+    if (app.isPackaged) {
+      // In production (packaged app)
+      iconPath = path.join(process.resourcesPath, 'assets', 'tray-icon.png');
     } else {
+      // In development
       iconPath = path.join(__dirname, '../assets/tray-icon.png');
     }
     
@@ -72,10 +97,12 @@ function createTray() {
       openSettings();
     });
     
-    // On macOS, make sure the app doesn't show in dock if user doesn't want it
+    // On macOS, show both dock and tray icon for better accessibility
     if (process.platform === 'darwin') {
-      // Hide dock icon but keep tray icon
-      app.dock.hide();
+      // Show dock icon so users can right-click it for settings
+      app.dock.show();
+      // Create dock context menu
+      createDockMenu();
     }
     
     console.log('Tray created successfully');
