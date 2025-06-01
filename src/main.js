@@ -81,14 +81,14 @@ function createTray() {
         type: 'separator'
       },
       {
-        label: 'Quit SunnAI Dictation',
+        label: 'Quit SunnAI',
         click: () => {
           app.quit();
         }
       }
     ]);
     
-    tray.setToolTip('SunnAI Dictation - Right-click for menu');
+    tray.setToolTip('SunnAI - Right-click for menu');
     tray.setContextMenu(contextMenu);
     
     // Handle click events
@@ -156,9 +156,9 @@ async function checkApiKeyAndShowSettings() {
   if (!settingsService.hasApiKey() || settingsService.isFirstRun()) {
     const result = await dialog.showMessageBox({
       type: 'info',
-      title: 'Welcome to SunnAI Dictation',
+      title: 'Welcome to SunnAI',
       message: 'API Key Required',
-      detail: 'Please configure your OpenAI API key to start using SunnAI Dictation.',
+      detail: 'Please configure your OpenAI API key to start using SunnAI.',
       buttons: ['Open Settings', 'Quit'],
       defaultId: 0
     });

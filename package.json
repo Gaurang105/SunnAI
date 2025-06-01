@@ -1,7 +1,7 @@
 {
-  "name": "sunn-ai-dictation",
+  "name": "sunnai",
   "version": "1.0.0",
-  "description": "AI-powered dictation tool with dynamic overlay",
+  "description": "AI-powered speech-to-text application with intelligent assistant capabilities",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
@@ -13,8 +13,8 @@
     "postinstall": "electron-builder install-app-deps"
   },
   "keywords": [
-    "dictation",
     "AI",
+    "speech-to-text",
     "whisper",
     "electron",
     "overlay"
@@ -41,8 +41,8 @@
     "openai": "^4.20.1"
   },
   "build": {
-    "appId": "com.sunnai.dictation",
-    "productName": "SunnAI Dictation",
+    "appId": "com.sunnai.app",
+    "productName": "SunnAI",
     "directories": {
       "output": "dist"
     },

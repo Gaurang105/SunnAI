@@ -23,7 +23,7 @@ class AudioService {
         this.recordingProcess = null;
         
         // Use OS temp directory instead of trying to create inside app bundle
-        this.tempDir = path.join(os.tmpdir(), 'sunnai-dictation');
+        this.tempDir = path.join(os.tmpdir(), 'sunnai');
         this.audioFile = path.join(this.tempDir, 'recording.wav');
         
         // Get models from settings

@@ -2,21 +2,27 @@
 
 AI-powered speech-to-text application with intelligent assistant capabilities.
 
+## ⚠️ Platform Requirements
+
+**Currently supports ARM-based macOS only** (Apple Silicon M1/M2/M3 processors)
+
+The application is optimized for Apple Silicon Macs using Homebrew paths specific to ARM architecture. Support for Intel Macs, Windows, and Linux will be added in future releases.
+
 ## Features
 
 - **🎤 Real-time Speech-to-Text**: Convert speech to text using OpenAI Whisper with high accuracy
 - **🤖 AI Assistant Integration**: Activate with "Hey Sun" or "Hey Son" to get AI-generated responses using GPT-4o-mini  
 - **🖥️ Dynamic Overlay Interface**: Seamless floating overlay that integrates with any application
 - **⚙️ Persistent Settings**: Encrypted configuration storage with user-friendly settings interface
-- **🔄 Cross-Platform Audio**: Optimized audio recording for macOS, Windows, and Linux
+- **🔄 Optimized Audio Recording**: Native audio recording for ARM-based macOS systems
 - **🎯 System Tray Integration**: Convenient system tray access and controls
-- **⌨️ Global Hotkey**: Quick activation with customizable keyboard shortcuts
-- **🎨 Modern UI**: Clean, minimal interface with smooth animations
+- **⌨️ Global Hotkey**: Quick activation with customizable keyboard shortcuts (`Cmd+H`)
+- **🎨 Modern UI**: Clean, minimal interface with smooth animations and custom styling
 
 ## How It Works
 
 ### 📝 Dictation Mode
-Simply press the global hotkey (`Cmd+H` on Mac, `Ctrl+H` on Windows/Linux) and speak normally. Your words will be transcribed and typed where your cursor is located.
+Simply press the global hotkey (`Cmd+H`) and speak normally. Your words will be transcribed and typed where your cursor is located.
 
 ### 🤖 Assistant Mode  
 Press the hotkey and say "Hey Sun" or "Hey Son" followed by your request:
@@ -27,18 +33,18 @@ Press the hotkey and say "Hey Sun" or "Hey Son" followed by your request:
 The AI assistant will generate appropriate content and type it for you.
 
 ### 🎛️ Interface Elements
-- **Floating Overlay**: Compact circular button that expands during use
+- **Floating Overlay**: Compact circular button that expands during use with visual feedback
 - **System Tray**: Right-click for settings and controls
-- **Settings Panel**: Configure API keys, models, and preferences
+- **Settings Panel**: Configure API keys, models, and preferences with modern UI
 
 ## Prerequisites
 
+- **ARM-based macOS** (Apple Silicon M1/M2/M3 processors)
 - **Node.js** (v16 or higher)
 - **npm** (comes with Node.js)
 - **Audio Recording Dependencies**:
-  - macOS: `sox` (install via `brew install sox`)
-  - Windows: `ffmpeg`
-  - Linux: `arecord` (usually pre-installed)
+  - **sox**: Install via Homebrew: `brew install sox`
+    - The app specifically looks for sox at `/opt/homebrew/bin/sox` (ARM Homebrew path)
 
 ## Installation
 
@@ -54,7 +60,12 @@ The AI assistant will generate appropriate content and type it for you.
    npx electron-rebuild
    ```
 
-3. **Configure your OpenAI API key:**
+3. **Install sox for audio recording:**
+   ```bash
+   brew install sox
+   ```
+
+4. **Configure your OpenAI API key:**
    - Start the application (it will prompt for API key on first run)
    - Or manually create a `.env` file in the root directory:
    ```env
@@ -81,26 +92,23 @@ npm start
 
 1. **First Time Setup**: The app will guide you through API key configuration
 2. **Access Settings**: Right-click the system tray icon or double-click it
-3. **Start Dictating**: Use the global hotkey (`Cmd+H` or `Ctrl+H`) and speak
+3. **Start Dictating**: Use the global hotkey (`Cmd+H`) and speak
 4. **AI Assistant**: Use hotkey + "Hey Sun/Son + your command"
 
 ### Global Shortcuts
 
 - **macOS**: `Cmd+H` - Start/stop recording
-- **Windows/Linux**: `Ctrl+H` - Start/stop recording
 
 ## Building for Distribution
 
 Build the application for distribution:
 
 ```bash
-# Build for current platform
+# Build for current platform (ARM macOS)
 npm run build
 
-# Platform-specific builds
-npm run build:mac    # macOS (.dmg, .app)
-npm run build:win    # Windows (.exe)
-npm run build:linux  # Linux (.AppImage, .deb)
+# ARM macOS specific build
+npm run build:mac
 ```
 
 Built applications will be available in the `dist/` directory.
@@ -110,28 +118,30 @@ Built applications will be available in the `dist/` directory.
 ```
 SunnAI/
 ├── src/
-│   ├── main.js                 # Electron main process
+│   ├── main.js                    # Electron main process
 │   ├── services/
-│   │   ├── audioService.js     # Speech recording & OpenAI integration
-│   │   ├── settingsService.js  # Configuration management
+│   │   ├── audioService.js        # Speech recording & OpenAI integration
+│   │   ├── settingsService.js     # Configuration management
 │   │   └── textInjectionService.js # Text input automation
 │   └── renderer/
-│       ├── overlay.html        # Floating overlay interface
-│       ├── overlay.js          # Overlay functionality
-│       ├── settings.html       # Settings panel
-│       └── settings.js         # Settings management
-├── assets/                     # Icons and resources
-├── temp/                       # Temporary audio files
-└── dist/                       # Built applications
+│       ├── overlay.html           # Floating overlay interface
+│       ├── overlay.js             # Overlay functionality
+│       ├── overlay.css            # Overlay styling
+│       ├── settings.html          # Settings panel
+│       ├── settings.js            # Settings management
+│       └── settings.css           # Settings panel styling
+├── assets/                        # Icons and resources
+├── temp/                          # Temporary audio files (auto-created)
+└── dist/                          # Built applications
 ```
 
 ## Technologies
 
 - **Electron** - Cross-platform desktop framework
 - **OpenAI API** - Whisper (speech-to-text) & GPT-4o-mini (AI assistant)
-- **RobotJS** - System-level text injection
+- **@hurdlegroup/robotjs** - System-level text injection for macOS
 - **Electron Store** - Encrypted settings persistence
-- **Platform Audio Tools** - sox (macOS), ffmpeg (Windows), arecord (Linux)
+- **sox** - High-quality audio recording for ARM macOS
 
 ## Configuration Options
 
@@ -141,12 +151,21 @@ Access these through the Settings panel:
 - **Whisper Model**: Speech recognition model (default: whisper-1)
 - **Assistant Model**: AI assistant model (default: gpt-4o-mini)
 
+## Audio Recording Details
+
+The application uses `sox` for high-quality audio recording on ARM macOS:
+- **Sample Rate**: 16kHz
+- **Channels**: Mono (1 channel)
+- **Bit Depth**: 16-bit
+- **Format**: WAV
+- **Path**: Uses system temp directory for audio files
+
 ## Troubleshooting
 
 ### Audio Recording Issues
-- **macOS**: Install sox with `brew install sox`
-- **Windows**: Ensure ffmpeg is installed and in PATH
-- **Linux**: Install arecord with your package manager
+- **Install sox**: Make sure sox is installed via Homebrew: `brew install sox`
+- **ARM Homebrew Path**: The app looks for sox at `/opt/homebrew/bin/sox`
+- **Microphone Permissions**: Grant microphone permissions when prompted by macOS
 
 ### API Key Issues
 - Ensure your OpenAI API key starts with `sk-`
@@ -155,7 +174,20 @@ Access these through the Settings panel:
 
 ### Permission Issues
 - **macOS**: Grant microphone and accessibility permissions when prompted
-- **Windows**: Run as administrator if needed for global hotkeys
+- **Accessibility**: Required for global hotkeys and text injection
+
+### Platform Compatibility
+- **Current Support**: ARM-based macOS only (Apple Silicon M1/M2/M3)
+- **Future Support**: Intel macOS, Windows, and Linux support planned
+
+## Development Roadmap
+
+- [ ] Intel macOS support
+- [ ] Windows support  
+- [ ] Linux support
+- [ ] Additional audio input formats
+- [ ] Customizable hotkeys
+- [ ] Multiple language support
 
 ## License
 

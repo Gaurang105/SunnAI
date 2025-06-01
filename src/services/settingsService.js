@@ -5,7 +5,7 @@ class SettingsService {
     constructor() {
         this.store = new Store({
             name: 'sunnai-settings',
-            encryptionKey: 'sunnai-dictation-settings-key',
+            encryptionKey: 'sunnai-settings-key',
             schema: {
                 apiKey: {
                     type: 'string',

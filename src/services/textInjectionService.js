@@ -141,7 +141,7 @@ class TextInjectionService {
     // Utility method to test if text injection is working
     async testInjection() {
         try {
-            await this.injectText('Test message from SunnAI Dictation');
+            await this.injectText('Test message from SunnAI');
             return true;
         } catch (error) {
             console.error('Text injection test failed:', error);
