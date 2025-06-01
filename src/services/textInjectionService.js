@@ -1,4 +1,4 @@
-const robot = require('robotjs');
+const robot = require('@hurdlegroup/robotjs');
 const { clipboard } = require('electron');
 
 class TextInjectionService {
