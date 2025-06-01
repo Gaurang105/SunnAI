@@ -47,9 +47,9 @@ body {
 /* Compact State */
 #compact-state {
     background: #ffffff;
-    border: 2px solid #000000;
     width: 48px;
     height: 48px;
+    border-radius: 0;
     cursor: pointer;
     transition: all 0.15s ease;
     display: flex;
@@ -74,9 +74,9 @@ body {
 /* Expanded State */
 #expanded-state {
     background: #ffffff;
-    border: 2px solid #000000;
     width: 320px;
-    height: 64px;
+    height: 48px;
+    border-radius: 0;
 }
 
 .content {
@@ -160,38 +160,6 @@ body {
     text-transform: uppercase;
 }
 
-/* Recording Indicator */
-.recording-dots {
-    position: absolute;
-    top: 50%;
-    right: 12px;
-    transform: translateY(-50%);
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    opacity: 0;
-    transition: opacity 0.15s ease;
-}
-
-.recording-dots.active {
-    opacity: 1;
-}
-
-.dot {
-    width: 4px;
-    height: 4px;
-    background: #000000;
-    animation: recording-pulse 1s infinite;
-}
-
-.dot:nth-child(2) {
-    animation-delay: 0.2s;
-}
-
-.dot:nth-child(3) {
-    animation-delay: 0.4s;
-}
-
 /* Animations */
 @keyframes pulse {
     0%, 100% {
@@ -213,22 +181,11 @@ body {
     }
 }
 
-@keyframes recording-pulse {
-    0%, 100% {
-        opacity: 0.3;
-        transform: scale(1);
-    }
-    50% {
-        opacity: 1;
-        transform: scale(1.2);
-    }
-}
-
 /* Responsive design */
 @media (max-width: 768px) {
     #expanded-state {
         width: 280px;
-        height: 56px;
+        height: 40px;
     }
     
     .content {
