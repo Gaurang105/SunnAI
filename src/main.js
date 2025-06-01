@@ -15,6 +15,13 @@ let audioService;
 let textInjectionService;
 let settingsService;
 
+// Development mode detection
+const isDev = process.argv.includes('--dev') || !app.isPackaged;
+
+if (isDev) {
+  console.log('Running in development mode');
+}
+
 function createDockMenu() {
   if (process.platform === 'darwin') {
     const dockMenu = Menu.buildFromTemplate([
@@ -196,6 +203,14 @@ function createOverlayWindow() {
 
   overlayWindow.setAlwaysOnTop(true, 'screen-saver');
 
+  // Ensure correct position after creation
+  overlayWindow.once('ready-to-show', () => {
+    updateOverlayPosition();
+  });
+
+  // Add event listeners for position updates
+  addOverlayEventListeners();
+
   // Dev tools removed from overlay to keep it clean and minimal
 }
 
@@ -203,30 +218,144 @@ function expandOverlay() {
   if (isExpanded) return;
   
   isExpanded = true;
-  const primaryDisplay = screen.getPrimaryDisplay();
-  const { width } = primaryDisplay.workAreaSize;
-  
-  overlayWindow.setBounds({
-    width: 300,
-    height: 80,
-    x: width - 320,
-    y: 20
-  }, true);
+  updateOverlayPosition();
 }
 
 function collapseOverlay() {
   if (!isExpanded) return;
   
   isExpanded = false;
+  updateOverlayPosition();
+}
+
+// Add screen change tracking
+function updateOverlayPosition() {
+  if (!overlayWindow || overlayWindow.isDestroyed()) {
+    if (isDev) console.log('Cannot update overlay position: window not available');
+    return;
+  }
+  
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width } = primaryDisplay.workAreaSize;
   
-  overlayWindow.setBounds({
+  const newBounds = isExpanded ? {
+    width: 300,
+    height: 80,
+    x: width - 320,
+    y: 20
+  } : {
     width: 42,
     height: 42,
     x: width - 62,
     y: 20
-  }, true);
+  };
+  
+  if (isDev) {
+    console.log('Updating overlay position:', {
+      isExpanded,
+      displayWidth: width,
+      newBounds,
+      currentBounds: overlayWindow.getBounds()
+    });
+  }
+  
+  overlayWindow.setBounds(newBounds, true);
+  
+  if (isDev) {
+    console.log('Overlay position updated for display change');
+  } else {
+    console.log('Overlay position updated for display change');
+  }
+}
+
+function setupScreenListeners() {
+  console.log(`Setting up screen listeners (${isDev ? 'development' : 'production'} mode)`);
+  
+  // Listen for display changes
+  screen.on('display-added', () => {
+    console.log('Display added, updating overlay position');
+    setTimeout(() => updateOverlayPosition(), isDev ? 200 : 100);
+  });
+  
+  screen.on('display-removed', () => {
+    console.log('Display removed, updating overlay position');
+    setTimeout(() => updateOverlayPosition(), isDev ? 200 : 100);
+  });
+  
+  screen.on('display-metrics-changed', () => {
+    console.log('Display metrics changed, updating overlay position');
+    setTimeout(() => updateOverlayPosition(), isDev ? 200 : 100);
+  });
+  
+  // Enhanced tracking for primary display changes
+  let lastPrimaryDisplay = screen.getPrimaryDisplay();
+  let lastOverlayBounds = null;
+  
+  const checkDisplayAndPosition = () => {
+    if (!overlayWindow || overlayWindow.isDestroyed()) return;
+    
+    const currentPrimaryDisplay = screen.getPrimaryDisplay();
+    const currentBounds = overlayWindow.getBounds();
+    
+    // Check if primary display changed
+    const displayChanged = currentPrimaryDisplay.id !== lastPrimaryDisplay.id || 
+                          currentPrimaryDisplay.workAreaSize.width !== lastPrimaryDisplay.workAreaSize.width ||
+                          currentPrimaryDisplay.workAreaSize.height !== lastPrimaryDisplay.workAreaSize.height;
+    
+    // Check if overlay position is outside current display bounds
+    const { width: displayWidth, height: displayHeight } = currentPrimaryDisplay.workAreaSize;
+    const isOutOfBounds = currentBounds.x > displayWidth || 
+                         currentBounds.y > displayHeight ||
+                         currentBounds.x < -currentBounds.width;
+    
+    // Check if overlay hasn't moved at all (might indicate it's stuck)
+    const boundsUnchanged = lastOverlayBounds && 
+                           currentBounds.x === lastOverlayBounds.x && 
+                           currentBounds.y === lastOverlayBounds.y &&
+                           displayChanged;
+    
+    if (displayChanged || isOutOfBounds || boundsUnchanged) {
+      if (isDev) {
+        console.log('Display or position change detected:', {
+          displayChanged,
+          isOutOfBounds,
+          boundsUnchanged,
+          currentBounds,
+          displayWidth,
+          displayHeight
+        });
+      } else {
+        console.log('Display or position change detected, updating overlay position');
+      }
+      updateOverlayPosition();
+      lastPrimaryDisplay = currentPrimaryDisplay;
+    }
+    
+    lastOverlayBounds = { ...currentBounds };
+  };
+  
+  // Check more frequently in development mode for better responsiveness
+  const checkInterval = isDev ? 250 : 500;
+  setInterval(checkDisplayAndPosition, checkInterval);
+  
+  // Also add app focus/blur listeners for macOS space changes
+  app.on('browser-window-focus', () => {
+    if (isDev) console.log('Browser window focused, updating overlay position');
+    setTimeout(() => updateOverlayPosition(), isDev ? 150 : 100);
+  });
+  
+  app.on('browser-window-blur', () => {
+    if (isDev) console.log('Browser window blurred, updating overlay position');
+    setTimeout(() => updateOverlayPosition(), isDev ? 150 : 100);
+  });
+  
+  // Additional listener for app activation (important for dev mode)
+  app.on('activate', () => {
+    if (isDev) console.log('App activated, updating overlay position');
+    setTimeout(() => updateOverlayPosition(), isDev ? 200 : 100);
+  });
+  
+  console.log(`Screen listeners setup complete (check interval: ${checkInterval}ms)`);
 }
 
 app.whenReady().then(async () => {
@@ -276,6 +405,16 @@ app.whenReady().then(async () => {
   app.on('window-all-closed', (e) => {
     e.preventDefault();
   });
+
+  // Setup screen listeners with delay in development mode
+  if (isDev) {
+    console.log('Setting up screen listeners with development mode delay...');
+    setTimeout(() => {
+      setupScreenListeners();
+    }, 1000);
+  } else {
+    setupScreenListeners();
+  }
 });
 
 app.on('will-quit', () => {
@@ -429,6 +568,38 @@ ipcMain.handle('close-settings', () => {
 ipcMain.handle('open-settings', () => {
   openSettings();
 });
+
+// Handler for overlay position update requests
+ipcMain.handle('update-overlay-position', () => {
+  updateOverlayPosition();
+});
+
+// Add focus event handling for the overlay to detect space changes
+function addOverlayEventListeners() {
+  if (overlayWindow) {
+    overlayWindow.on('focus', () => {
+      if (isDev) console.log('Overlay focused, updating position');
+      setTimeout(() => updateOverlayPosition(), isDev ? 100 : 50);
+    });
+    
+    overlayWindow.on('blur', () => {
+      if (isDev) console.log('Overlay blurred');
+    });
+    
+    overlayWindow.on('show', () => {
+      if (isDev) console.log('Overlay shown, updating position');
+      setTimeout(() => updateOverlayPosition(), isDev ? 100 : 50);
+    });
+    
+    // Add move event listener for development debugging
+    if (isDev) {
+      overlayWindow.on('moved', () => {
+        const bounds = overlayWindow.getBounds();
+        console.log('Overlay moved to:', bounds);
+      });
+    }
+  }
+}
 
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);

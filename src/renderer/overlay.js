@@ -119,9 +119,30 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 window.addEventListener('blur', () => {
-    
+    // Request position update when window loses focus (might indicate space change)
+    setTimeout(() => {
+        ipcRenderer.invoke('update-overlay-position').catch(console.error);
+    }, 200);
 });
 
 window.addEventListener('focus', () => {
-    
-}); 
+    // Request position update when window gains focus (might indicate space change)
+    setTimeout(() => {
+        ipcRenderer.invoke('update-overlay-position').catch(console.error);
+    }, 200);
+});
+
+// Add visibility change listener for better space change detection
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+        // When the document becomes visible again, update position
+        setTimeout(() => {
+            ipcRenderer.invoke('update-overlay-position').catch(console.error);
+        }, 300);
+    }
+});
+
+// Add periodic position update for development mode
+setInterval(() => {
+    ipcRenderer.invoke('update-overlay-position').catch(console.error);
+}, 2000); // Every 2 seconds 
