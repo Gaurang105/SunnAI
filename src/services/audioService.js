@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { spawn } = require('child_process');
 const OpenAI = require('openai');
 const SettingsService = require('./settingsService');
@@ -20,7 +21,9 @@ class AudioService {
         
         this.isRecording = false;
         this.recordingProcess = null;
-        this.tempDir = path.join(__dirname, '../../temp');
+        
+        // Use OS temp directory instead of trying to create inside app bundle
+        this.tempDir = path.join(os.tmpdir(), 'sunnai-dictation');
         this.audioFile = path.join(this.tempDir, 'recording.wav');
         
         // Get models from settings
@@ -28,8 +31,14 @@ class AudioService {
         this.assistantModel = models.assistant;
         this.whisperModel = models.whisper;
         
+        // Create temp directory if it doesn't exist
         if (!fs.existsSync(this.tempDir)) {
-            fs.mkdirSync(this.tempDir, { recursive: true });
+            try {
+                fs.mkdirSync(this.tempDir, { recursive: true });
+            } catch (error) {
+                console.error('Failed to create temp directory:', error);
+                throw new Error(`Failed to create temp directory: ${error.message}`);
+            }
         }
     }
 
@@ -60,8 +69,28 @@ class AudioService {
                 let command, args;
                 
                 if (process.platform === 'darwin') {
-                    // macOS - use sox (install via brew install sox)
-                    command = 'sox';
+                    // macOS - use sox (try full paths for packaged app)
+                    // Common paths where sox might be installed
+                    const soxPaths = [
+                        '/opt/homebrew/bin/sox',  // Apple Silicon Homebrew
+                        '/usr/local/bin/sox',     // Intel Homebrew
+                        'sox'                     // PATH fallback
+                    ];
+                    
+                    command = soxPaths[0]; // Start with most likely path
+                    for (const soxPath of soxPaths) {
+                        try {
+                            // Check if this path exists
+                            if (soxPath !== 'sox') {
+                                require('fs').accessSync(soxPath, require('fs').constants.F_OK);
+                            }
+                            command = soxPath;
+                            break;
+                        } catch (e) {
+                            continue;
+                        }
+                    }
+                    
                     args = ['-d', '-r', '16000', '-c', '1', '-b', '16', this.audioFile];
                 } else if (process.platform === 'win32') {
                     command = 'ffmpeg';
@@ -72,11 +101,15 @@ class AudioService {
                 }
 
                 this.recordingProcess = spawn(command, args);
+                
                 this.isRecording = true;
 
                 this.recordingProcess.on('error', (error) => {
                     this.isRecording = false;
                     reject(new Error(`Recording failed: ${error.message}`));
+                });
+
+                this.recordingProcess.on('spawn', () => {
                 });
 
                 resolve();
@@ -104,10 +137,8 @@ class AudioService {
                 }
             });
 
-            // Gracefully terminate the recording
             this.recordingProcess.kill('SIGTERM');
             
-            // Force kill after 5 seconds if it doesn't respond
             setTimeout(() => {
                 if (this.recordingProcess) {
                     this.recordingProcess.kill('SIGKILL');
@@ -122,8 +153,6 @@ class AudioService {
                 throw new Error('Audio file not found');
             }
 
-            console.log('Transcribing audio with OpenAI Whisper...');
-            
             const transcription = await this.openai.audio.transcriptions.create({
                 file: fs.createReadStream(audioFilePath),
                 model: this.whisperModel,
@@ -131,7 +160,6 @@ class AudioService {
                 response_format: 'text'
             });
 
-            // Clean up the temporary audio file
             try {
                 fs.unlinkSync(audioFilePath);
             } catch (cleanupError) {
@@ -141,9 +169,6 @@ class AudioService {
             return transcription.trim();
 
         } catch (error) {
-            console.error('Transcription error:', error);
-            
-            // Clean up file even on error
             try {
                 if (fs.existsSync(audioFilePath)) {
                     fs.unlinkSync(audioFilePath);
@@ -159,7 +184,6 @@ class AudioService {
     async recordAndTranscribe() {
         try {
             await this.startRecording();
-            console.log('Recording started...');
             
             return new Promise((resolve, reject) => {
                 this.transcribeCallback = { resolve, reject };
@@ -173,7 +197,6 @@ class AudioService {
     async finishRecordingAndTranscribe() {
         try {
             const audioFilePath = await this.stopRecording();
-            console.log('Recording stopped, starting transcription...');
             
             const transcribedText = await this.transcribeAudio(audioFilePath);
 
@@ -191,17 +214,14 @@ class AudioService {
                 }
                 
                 if (command) {
-                    console.log('Assistant command detected:', command);
                     const assistantResponse = await this.processAssistantCommand(command);
                     if (this.transcribeCallback) {
-                        // Pass a special object or prefix to distinguish assistant responses
                         this.transcribeCallback.resolve({ type: 'assistant', content: assistantResponse });
                         this.transcribeCallback = null;
                     }
                     return { type: 'assistant', content: assistantResponse };
                 } else {
-                    console.warn("'Hey Sun' or 'Hey Son' detected but no command followed.");
-                     if (this.transcribeCallback) {
+                    if (this.transcribeCallback) {
                         this.transcribeCallback.resolve(transcribedText); 
                         this.transcribeCallback = null;
                     }
@@ -232,7 +252,6 @@ class AudioService {
 
     async processAssistantCommand(command) {
         try {
-            console.log(`Sending command to assistant (${this.assistantModel}):`, command);
             const completion = await this.openai.chat.completions.create({
                 model: this.assistantModel,
                 messages: [
@@ -243,12 +262,9 @@ class AudioService {
             });
 
             const response = completion.choices[0].message.content.trim();
-            console.log('Assistant response:', response);
             return response;
 
         } catch (error) {
-            console.error('Error processing assistant command:', error);
-            // Ensure this re-throws an error or returns a meaningful error object/string
             throw new Error(`Assistant command failed: ${error.message}`);
         }
     }

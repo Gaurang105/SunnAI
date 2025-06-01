@@ -60,7 +60,7 @@ class SettingsManager {
             saveBtn.disabled = true;
             saveBtn.textContent = 'Saving...';
 
-            await ipcRenderer.invoke('save-settings', { apiKey });
+            const result = await ipcRenderer.invoke('save-settings', { apiKey });
             
             this.showStatus('Settings saved successfully', 'success');
             
@@ -71,7 +71,7 @@ class SettingsManager {
 
         } catch (error) {
             console.error('Failed to save settings:', error);
-            this.showStatus('Failed to save settings', 'error');
+            this.showStatus('Failed to save settings: ' + error.message, 'error');
         } finally {
             const saveBtn = document.getElementById('saveBtn');
             saveBtn.disabled = false;

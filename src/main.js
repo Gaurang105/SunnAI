@@ -16,33 +16,72 @@ let textInjectionService;
 let settingsService;
 
 function createTray() {
-  // You'll need to add an appropriate tray icon to your assets folder
-  const iconPath = path.join(__dirname, '../assets/tray-icon.png');
-  tray = new Tray(iconPath);
-  
-  const contextMenu = Menu.buildFromTemplate([
-    {
-      label: 'Settings',
-      click: () => openSettings()
-    },
-    {
-      type: 'separator'
-    },
-    {
-      label: 'Quit',
-      click: () => {
-        app.quit();
-      }
+  try {
+    // Use different icon paths for different platforms
+    let iconPath;
+    if (process.platform === 'darwin') {
+      // On macOS, use a smaller icon for the menu bar
+      iconPath = path.join(__dirname, '../assets/tray-icon.png');
+    } else {
+      iconPath = path.join(__dirname, '../assets/tray-icon.png');
     }
-  ]);
-  
-  tray.setToolTip('SunnAI Dictation');
-  tray.setContextMenu(contextMenu);
-  
-  // Open settings on double click
-  tray.on('double-click', () => {
-    openSettings();
-  });
+    
+    console.log('Creating tray with icon:', iconPath);
+    tray = new Tray(iconPath);
+    
+    const contextMenu = Menu.buildFromTemplate([
+      {
+        label: 'Show Settings',
+        click: () => openSettings()
+      },
+      {
+        type: 'separator'
+      },
+      {
+        label: 'Show Overlay',
+        click: () => {
+          if (overlayWindow) {
+            overlayWindow.show();
+          }
+        }
+      },
+      {
+        type: 'separator'
+      },
+      {
+        label: 'Quit SunnAI Dictation',
+        click: () => {
+          app.quit();
+        }
+      }
+    ]);
+    
+    tray.setToolTip('SunnAI Dictation - Right-click for menu');
+    tray.setContextMenu(contextMenu);
+    
+    // Handle click events
+    tray.on('click', () => {
+      // On Windows/Linux, left click opens settings
+      if (process.platform !== 'darwin') {
+        openSettings();
+      }
+    });
+    
+    // Open settings on double click (works on all platforms)
+    tray.on('double-click', () => {
+      openSettings();
+    });
+    
+    // On macOS, make sure the app doesn't show in dock if user doesn't want it
+    if (process.platform === 'darwin') {
+      // Hide dock icon but keep tray icon
+      app.dock.hide();
+    }
+    
+    console.log('Tray created successfully');
+  } catch (error) {
+    console.error('Failed to create tray:', error);
+  }
 }
 
 function openSettings() {
@@ -186,6 +225,7 @@ app.whenReady().then(async () => {
   createOverlayWindow();
 
   const hotkey = process.platform === 'darwin' ? 'Cmd+H' : 'Ctrl+H';
+  const settingsHotkey = process.platform === 'darwin' ? 'Cmd+Shift+,' : 'Ctrl+Shift+,';
   
   globalShortcut.register(hotkey, () => {
     if (!audioService) {
@@ -199,6 +239,11 @@ app.whenReady().then(async () => {
     } else {
       startRecording();
     }
+  });
+
+  // Register settings shortcut
+  globalShortcut.register(settingsHotkey, () => {
+    openSettings();
   });
 
   app.on('window-all-closed', (e) => {
@@ -351,6 +396,11 @@ ipcMain.handle('close-settings', () => {
   if (settingsWindow) {
     settingsWindow.close();
   }
+});
+
+// Handler for overlay to open settings
+ipcMain.handle('open-settings', () => {
+  openSettings();
 });
 
 process.on('uncaughtException', (error) => {
