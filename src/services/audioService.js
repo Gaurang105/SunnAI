@@ -2,22 +2,52 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const OpenAI = require('openai');
+const SettingsService = require('./settingsService');
 
 class AudioService {
     constructor() {
+        this.settingsService = new SettingsService();
+        
+        // Initialize OpenAI with API key from settings
+        const apiKey = this.settingsService.getApiKey();
+        if (!apiKey) {
+            throw new Error('OpenAI API key not configured. Please set up your API key in settings.');
+        }
+        
         this.openai = new OpenAI({
-            apiKey: process.env.OPENAI_API_KEY
+            apiKey: apiKey
         });
         
         this.isRecording = false;
         this.recordingProcess = null;
         this.tempDir = path.join(__dirname, '../../temp');
         this.audioFile = path.join(this.tempDir, 'recording.wav');
-        this.assistantModel = process.env.ASSISTANT_MODEL || 'gpt-4o-mini';
+        
+        // Get models from settings
+        const models = this.settingsService.getModels();
+        this.assistantModel = models.assistant;
+        this.whisperModel = models.whisper;
         
         if (!fs.existsSync(this.tempDir)) {
             fs.mkdirSync(this.tempDir, { recursive: true });
         }
+    }
+
+    // Method to update API key dynamically
+    updateApiKey() {
+        const apiKey = this.settingsService.getApiKey();
+        if (!apiKey) {
+            throw new Error('OpenAI API key not configured. Please set up your API key in settings.');
+        }
+        
+        this.openai = new OpenAI({
+            apiKey: apiKey
+        });
+        
+        // Update models as well
+        const models = this.settingsService.getModels();
+        this.assistantModel = models.assistant;
+        this.whisperModel = models.whisper;
     }
 
     async startRecording() {
@@ -96,7 +126,7 @@ class AudioService {
             
             const transcription = await this.openai.audio.transcriptions.create({
                 file: fs.createReadStream(audioFilePath),
-                model: process.env.WHISPER_MODEL || 'whisper-1',
+                model: this.whisperModel,
                 language: 'en', // Can be made configurable
                 response_format: 'text'
             });

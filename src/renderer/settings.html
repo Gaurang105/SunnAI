@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SunnAI Settings</title>
+    <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">Settings</h1>
+            <p class="subtitle">Configure your API Key</p>
+        </header>
+
+        <main class="content">
+            <form class="settings-form" id="settingsForm">
+                <div class="form-group">
+                    <label for="apiKey" class="label">OpenAI API Key</label>
+                    <input 
+                        type="password" 
+                        id="apiKey" 
+                        class="input" 
+                        placeholder="sk-..."
+                        autocomplete="off"
+                        spellcheck="false"
+                    >
+                    <button type="button" class="toggle-visibility" id="toggleApiKey">
+                        <span class="icon">👁</span>
+                    </button>
+                    <p class="help-text">Your API key is stored locally and never shared</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="label">Models</label>
+                    <div class="model-info">
+                        <div class="model-row">
+                            <span class="model-label">Whisper Model:</span>
+                            <span class="model-value">whisper-1</span>
+                        </div>
+                        <div class="model-row">
+                            <span class="model-label">Assistant Model:</span>
+                            <span class="model-value">gpt-4o-mini</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="label">Keyboard Shortcut</label>
+                    <div class="shortcut-display">
+                        <span class="key">⌘</span>
+                        <span class="plus">+</span>
+                        <span class="key">H</span>
+                    </div>
+                    <p class="help-text">Press to start/stop recording</p>
+                </div>
+            </form>
+        </main>
+
+        <footer class="footer">
+            <div class="button-group">
+                <button type="button" class="button button-secondary" id="cancelBtn">Cancel</button>
+                <button type="submit" class="button button-primary" id="saveBtn" form="settingsForm">Save</button>
+            </div>
+        </footer>
+
+        <div class="status-message" id="statusMessage"></div>
+    </div>
+
+    <script src="settings.js"></script>
+</body>
+</html> 

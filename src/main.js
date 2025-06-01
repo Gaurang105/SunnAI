@@ -1,14 +1,105 @@
-const { app, BrowserWindow, globalShortcut, ipcMain, screen } = require('electron');
+const { app, BrowserWindow, globalShortcut, ipcMain, screen, Tray, Menu, dialog } = require('electron');
+const path = require('path');
 require('dotenv').config();
 
 const AudioService = require('./services/audioService');
 const TextInjectionService = require('./services/textInjectionService');
+const SettingsService = require('./services/settingsService');
 
 let overlayWindow;
+let settingsWindow;
+let tray;
 let isRecording = false;
 let isExpanded = false;
 let audioService;
 let textInjectionService;
+let settingsService;
+
+function createTray() {
+  // You'll need to add an appropriate tray icon to your assets folder
+  const iconPath = path.join(__dirname, '../assets/tray-icon.png');
+  tray = new Tray(iconPath);
+  
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Settings',
+      click: () => openSettings()
+    },
+    {
+      type: 'separator'
+    },
+    {
+      label: 'Quit',
+      click: () => {
+        app.quit();
+      }
+    }
+  ]);
+  
+  tray.setToolTip('SunnAI Dictation');
+  tray.setContextMenu(contextMenu);
+  
+  // Open settings on double click
+  tray.on('double-click', () => {
+    openSettings();
+  });
+}
+
+function openSettings() {
+  if (settingsWindow) {
+    settingsWindow.focus();
+    return;
+  }
+  
+  settingsWindow = new BrowserWindow({
+    width: 480,
+    height: 600,
+    resizable: false,
+    maximizable: false,
+    minimizable: false,
+    fullscreenable: false,
+    show: false,
+    titleBarStyle: 'hiddenInset',
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    }
+  });
+  
+  settingsWindow.loadFile('src/renderer/settings.html');
+  
+  settingsWindow.once('ready-to-show', () => {
+    settingsWindow.show();
+  });
+  
+  settingsWindow.on('closed', () => {
+    settingsWindow = null;
+  });
+  
+  // Dev tools completely removed for clean user experience
+}
+
+async function checkApiKeyAndShowSettings() {
+  if (!settingsService.hasApiKey() || settingsService.isFirstRun()) {
+    const result = await dialog.showMessageBox({
+      type: 'info',
+      title: 'Welcome to SunnAI Dictation',
+      message: 'API Key Required',
+      detail: 'Please configure your OpenAI API key to start using SunnAI Dictation.',
+      buttons: ['Open Settings', 'Quit'],
+      defaultId: 0
+    });
+    
+    if (result.response === 0) {
+      openSettings();
+      settingsService.setFirstRunComplete();
+    } else {
+      app.quit();
+      return false;
+    }
+  }
+  return true;
+}
 
 function createOverlayWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
@@ -39,9 +130,7 @@ function createOverlayWindow() {
 
   overlayWindow.setAlwaysOnTop(true, 'screen-saver');
 
-  if (process.argv.includes('--dev')) {
-    overlayWindow.webContents.openDevTools();
-  }
+  // Dev tools removed from overlay to keep it clean and minimal
 }
 
 function expandOverlay() {
@@ -74,15 +163,37 @@ function collapseOverlay() {
   }, true);
 }
 
-app.whenReady().then(() => {
-  audioService = new AudioService();
+app.whenReady().then(async () => {
+  settingsService = new SettingsService();
   textInjectionService = new TextInjectionService();
+  
+  // Create tray first
+  createTray();
+  
+  // Check if API key is configured
+  const hasValidSetup = await checkApiKeyAndShowSettings();
+  
+  if (hasValidSetup && settingsService.hasApiKey()) {
+    try {
+      audioService = new AudioService();
+    } catch (error) {
+      console.error('Failed to initialize AudioService:', error);
+      // If API key is invalid, show settings again
+      openSettings();
+    }
+  }
   
   createOverlayWindow();
 
   const hotkey = process.platform === 'darwin' ? 'Cmd+H' : 'Ctrl+H';
   
   globalShortcut.register(hotkey, () => {
+    if (!audioService) {
+      dialog.showErrorBox('Configuration Required', 'Please configure your API key in settings first.');
+      openSettings();
+      return;
+    }
+    
     if (isRecording) {
       stopRecording();
     } else {
@@ -210,6 +321,35 @@ ipcMain.handle('test-audio-recording', async () => {
     return { success: true, message: 'Audio recording system is ready' };
   } catch (error) {
     return { success: false, error: error.message };
+  }
+});
+
+// IPC Handlers for Settings
+ipcMain.handle('get-settings', () => {
+  return settingsService.getSettings();
+});
+
+ipcMain.handle('save-settings', async (event, settings) => {
+  try {
+    settingsService.saveSettings(settings);
+    
+    // Reinitialize audio service with new settings
+    if (settings.apiKey && audioService) {
+      audioService.updateApiKey();
+    } else if (settings.apiKey && !audioService) {
+      audioService = new AudioService();
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to save settings:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('close-settings', () => {
+  if (settingsWindow) {
+    settingsWindow.close();
   }
 });
 
